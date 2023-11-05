@@ -1,0 +1,41 @@
+name: CI
+on:
+  - push
+  - pull_request
+jobs:
+  fmt:
+    name: rustfmt check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: nightly
+          profile: default
+      - run: git ls-files | grep -P '.*\.rs$' | xargs rustfmt +nightly --check
+  lint:
+    name: clippy lint
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+    strategy:
+      matrix:
+        toolchain:
+          - stable
+          - beta
+          - nightly
+        stability:
+          - ""
+          - "--release"
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: ${{matrix.toolchain}}
+          profile: default
+          default: true
+      - uses: actions-rs/clippy-check@v1
+        with:
+          token: ${{secrets.GITHUB_TOKEN}}
+          args: --all ${{matrix.stability}}
+          name: debug${{matrix.stability}}
