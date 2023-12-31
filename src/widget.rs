@@ -38,7 +38,7 @@ pub trait Draw {
 impl<D: Draw, E: Fn(DrawingAreaErrorKind<Error>)> Widget for PlottersWidget<D, E> {
     fn render(self, area: layout::Rect, buf: &mut Buffer) {
         let (size_x, size_y) = super::rect_to_size(area);
-        log::error!("size: {area:?}, {size_x}, {size_y}");
+        log::debug!("size: {area:?}, {size_x}, {size_y}");
         let canvas =
             Canvas::default().x_bounds([0.0, 1.0]).y_bounds([0.0, 1.0]).paint(move |canvas| {
                 let backend = RatatuiBackend { canvas, size: area };
