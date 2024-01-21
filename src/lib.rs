@@ -66,15 +66,27 @@ impl<'a, 'b> DrawingBackend for RatatuiBackend<'a, 'b> {
         coord: BackendCoord,
         radius: u32,
         style: &S,
-        _fill: bool,
+        fill: bool,
     ) -> std::result::Result<(), DrawingErrorKind<Self::ErrorType>> {
         let (x, y) = backend_to_canvas_coords(coord, self.size);
-        self.canvas.draw(&canvas::Circle {
-            x,
-            y,
-            radius: radius.into(),
-            color: convert_color(style.color()),
-        });
+        if fill {
+            let radius = radius as i32;
+            for dy in -radius..=radius {
+                let half_width = ((radius.pow(2) - dy.pow(2)) as f64).sqrt() as i32;
+                self.draw_line(
+                    (coord.0 - half_width, coord.1 + dy),
+                    (coord.0 + half_width, coord.1 + dy),
+                    style,
+                )?;
+            }
+        } else {
+            self.canvas.draw(&canvas::Circle {
+                x,
+                y,
+                radius: radius.into(),
+                color: convert_color(style.color()),
+            });
+        }
         Ok(())
     }
 
@@ -83,18 +95,34 @@ impl<'a, 'b> DrawingBackend for RatatuiBackend<'a, 'b> {
         coord1: BackendCoord,
         coord2: BackendCoord,
         style: &S,
-        _fill: bool,
+        fill: bool,
     ) -> std::result::Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let (x1, y1) = backend_to_canvas_coords(coord1, self.size);
-        let (x2, y2) = backend_to_canvas_coords(coord2, self.size);
+        if fill {
+            let color = convert_color(style.color());
 
-        self.canvas.draw(&canvas::Rectangle {
-            x:      x1.min(x2),
-            y:      y1.min(y2),
-            width:  (x2 - x1).abs(),
-            height: (y2 - y1).abs(),
-            color:  convert_color(style.color()),
-        });
+            let (start, stop) = (
+                (coord1.0.min(coord2.0), coord1.1.min(coord2.1)),
+                (coord1.0.max(coord2.0), coord1.1.max(coord2.1)),
+            );
+
+            for x in start.0..=stop.0 {
+                let (x1, y1) = backend_to_canvas_coords((x, start.1), self.size);
+                let (x2, y2) = backend_to_canvas_coords((x, stop.1), self.size);
+
+                self.canvas.draw(&canvas::Line::new(x1, y1, x2, y2, color));
+            }
+        } else {
+            let (x1, y1) = backend_to_canvas_coords(coord1, self.size);
+            let (x2, y2) = backend_to_canvas_coords(coord2, self.size);
+
+            self.canvas.draw(&canvas::Rectangle {
+                x:      x1.min(x2),
+                y:      y1.min(y2),
+                width:  (x2 - x1).abs(),
+                height: (y2 - y1).abs(),
+                color:  convert_color(style.color()),
+            });
+        }
         Ok(())
     }
 
