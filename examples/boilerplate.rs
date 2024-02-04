@@ -52,3 +52,7 @@ pub fn main_boilerplate(
 
     Ok(())
 }
+
+#[warn(dead_code)]
+fn main() {}
+
