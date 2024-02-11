@@ -83,18 +83,34 @@ impl<'a, 'b> DrawingBackend for RatatuiBackend<'a, 'b> {
         coord1: BackendCoord,
         coord2: BackendCoord,
         style: &S,
-        _fill: bool,
+        fill: bool,
     ) -> std::result::Result<(), DrawingErrorKind<Self::ErrorType>> {
-        let (x1, y1) = backend_to_canvas_coords(coord1, self.size);
-        let (x2, y2) = backend_to_canvas_coords(coord2, self.size);
+        let color = convert_color(style.color());
 
-        self.canvas.draw(&canvas::Rectangle {
-            x:      x1.min(x2),
-            y:      y1.min(y2),
-            width:  (x2 - x1).abs(),
-            height: (y2 - y1).abs(),
-            color:  convert_color(style.color()),
-        });
+        let (start, stop) = (
+            (coord1.0.min(coord2.0), coord1.1.min(coord2.1)),
+            (coord1.0.max(coord2.0), coord1.1.max(coord2.1)),
+        );
+
+        if fill {
+            for x in start.0..=stop.0 {
+                let (x1, y1) = backend_to_canvas_coords((x, start.1), self.size);
+                let (x2, y2) = backend_to_canvas_coords((x, stop.1), self.size);
+
+                self.canvas.draw(&canvas::Line::new(x1, y1, x2, y2, color));
+            }
+        } else {
+            let (x1, y1) = backend_to_canvas_coords(start, self.size);
+            let (x2, y2) = backend_to_canvas_coords(stop, self.size);
+
+            self.canvas.draw(&canvas::Rectangle {
+                x: x1,
+                y: y1,
+                width: x2 - x1,
+                height: y2 - y1,
+                color:  convert_color(style.color()),
+            });
+        };
         Ok(())
     }
 
