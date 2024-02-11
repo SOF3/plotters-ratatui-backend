@@ -10,7 +10,7 @@ mod widget;
 #[cfg(feature = "widget")]
 pub use widget::*;
 
-pub const CHAR_PIXEL_SIZE: u32 = 4;
+pub const CHAR_PIXEL_DIMS: (u32, u32) = (2, 4);
 
 pub struct RatatuiBackend<'a, 'b> {
     pub canvas: &'a mut canvas::Context<'b>,
@@ -41,7 +41,7 @@ impl<'a, 'b> DrawingBackend for RatatuiBackend<'a, 'b> {
         mut coord: BackendCoord,
     ) -> Result {
         let width = text.chars().count();
-        coord.0 -= (width as u32 * CHAR_PIXEL_SIZE / 2) as i32;
+        coord.0 -= (width as u32 * CHAR_PIXEL_DIMS.0 / 2) as i32;
 
         let (x, y) = backend_to_canvas_coords(coord, self.size);
         self.canvas.print(x, y, text::Line::styled(text.to_string(), convert_style(style)));
@@ -103,12 +103,12 @@ impl<'a, 'b> DrawingBackend for RatatuiBackend<'a, 'b> {
         text: &str,
         _style: &TStyle,
     ) -> std::result::Result<(u32, u32), DrawingErrorKind<Self::ErrorType>> {
-        Ok((text.chars().count() as u32 * CHAR_PIXEL_SIZE, CHAR_PIXEL_SIZE))
+        Ok((text.chars().count() as u32 * CHAR_PIXEL_DIMS.0, CHAR_PIXEL_DIMS.1))
     }
 }
 
 fn rect_to_size(rect: layout::Rect) -> (u32, u32) {
-    (u32::from(rect.width) * CHAR_PIXEL_SIZE, u32::from(rect.height) * CHAR_PIXEL_SIZE)
+    (u32::from(rect.width) * CHAR_PIXEL_DIMS.0, u32::from(rect.height) * CHAR_PIXEL_DIMS.1)
 }
 
 fn backend_to_canvas_coords((x, y): BackendCoord, rect: layout::Rect) -> (f64, f64) {
