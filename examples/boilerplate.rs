@@ -15,6 +15,10 @@ use ratatui::layout::Direction;
 use ratatui::prelude::{Constraint, CrosstermBackend, Layout};
 use ratatui::Terminal;
 
+// cargo test requires this file to have a `main()`
+#[allow(dead_code)]
+fn main() {}
+
 pub fn main_boilerplate(
     draw_fns: &[fn(DrawingArea<RatatuiBackend, coord::Shift>) -> AreaResult],
 ) -> anyhow::Result<()> {
