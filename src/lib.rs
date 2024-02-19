@@ -131,3 +131,411 @@ pub type Result<T = ()> = std::result::Result<T, DrawingErrorKind<Error>>;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {}
+
+// -----------------------------------------------------------------------------
+
+#[cfg(test)]
+mod tests {
+    use plotters_backend::DrawingBackend;
+    use ratatui::{
+        assert_buffer_eq,
+        buffer::Buffer,
+        layout::Rect,
+        symbols::Marker,
+        widgets::{canvas::Canvas, Widget},
+    };
+
+    use crate::{convert_color, BackendColor, RatatuiBackend};
+
+    struct RectTest<'a> {
+        start: (i32, i32),
+        stop: (i32, i32),
+        fill: bool,
+        expected: Vec<&'a str>,
+    }
+
+    fn rect_test(test: &RectTest) {
+        println!("rect_test:  start: {:?}  stop: {:?}  fill: {:?}", test.start, test.stop, test.fill);
+        let mut buffer = Buffer::empty(Rect::new(0, 0, 10, 10));
+        let red = BackendColor { alpha: 1.0, rgb: (0xff, 0x00, 0x00) };
+        let canvas = Canvas::default()
+            .marker(Marker::Braille)
+            .x_bounds([0.0, 1.0])
+            .y_bounds([0.0, 1.0])
+            .paint(|context| {
+                let mut backend = RatatuiBackend { canvas: context, size: Rect::new(0, 0, 10, 10) };
+                backend.draw_rect(test.start, test.stop, &red, test.fill).unwrap();
+            });
+        canvas.render(buffer.area, &mut buffer);
+
+        let mut expected = Buffer::with_lines(test.expected.clone());
+        let fg = convert_color(red);
+        // Set the fg color for non-space elements
+        // Is there a less convoluted way to achieve the following?
+        for i in expected
+            .content
+            .iter()
+            .enumerate()
+            .filter(|(_, cell)| match cell.symbol() {
+                " " => false,
+                _ => true,
+            })
+            .map(|(i, _)| i)
+            .collect::<Vec<usize>>()
+        {
+            let pos = expected.pos_of(i);
+            expected.get_mut(pos.0, pos.1).set_fg(fg);
+        }
+        assert_buffer_eq!(buffer, expected);
+    }
+
+    // Why are the outputs for ((0,0),(0,0)) and ((0,0),(1,1)) and ((1,1),(1,1)) identical?
+    #[test]
+    fn test_rects() {
+        let tests: [RectTest; 20] = [
+            RectTest {
+                start: (0, 0),
+                stop: (0, 0),
+                fill: false,
+                expected: vec![
+                    "⠁         ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                ],
+            },
+            RectTest {
+                start: (0, 0),
+                stop: (1, 1),
+                fill: false,
+                expected: vec![
+                    "⠁         ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                ],
+            },
+            RectTest {
+                start: (1, 1),
+                stop: (0, 0),
+                fill: false,
+                expected: vec![
+                    "⠁         ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                ],
+            },
+            RectTest {
+                start: (1, 1),
+                stop: (1, 1),
+                fill: false,
+                expected: vec![
+                    "⠁         ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                ],
+            },
+            RectTest {
+                start: (1, 1),
+                stop: (1, 1),
+                fill: true,
+                expected: vec![
+                    "⠁         ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                ],
+            },
+            RectTest {
+                start: (1, 1),
+                stop: (2, 2),
+                fill: false,
+                expected: vec![
+                    "⠛         ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                ],
+            },
+            RectTest {
+                start: (1, 1),
+                stop: (2, 2),
+                fill: true,
+                expected: vec![
+                    "⠛         ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                ],
+            },
+            RectTest {
+                start: (0, 0),
+                stop: (2, 4),
+                fill: false,
+                expected: vec![
+                    "⣿         ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                ],
+            },
+            RectTest {
+                start: (0, 0),
+                stop: (2, 4),
+                fill: true,
+                expected: vec![
+                    "⣿         ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                ],
+            },
+            RectTest {
+                start: (2, 4),
+                stop: (3, 7),
+                fill: false,
+                expected: vec![
+                    "⢀⡀        ",
+                    "⠸⠇        ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                ],
+            },
+            RectTest {
+                start: (2, 4),
+                stop: (3, 7),
+                fill: true,
+                expected: vec![
+                    "⢀⡀        ",
+                    "⠸⠇        ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                ],
+            },
+            RectTest {
+                start: (2, 4),
+                stop: (5, 9),
+                fill: false,
+                expected: vec![
+                    "⢀⣀⡀       ",
+                    "⢸ ⡇       ",
+                    "⠈⠉⠁       ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                ],
+            },
+            RectTest {
+                start: (5, 9),
+                stop: (2, 4),
+                fill: false,
+                expected: vec![
+                    "⢀⣀⡀       ",
+                    "⢸ ⡇       ",
+                    "⠈⠉⠁       ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                ],
+            },
+            RectTest {
+                start: (2, 4),
+                stop: (5, 9),
+                fill: true,
+                expected: vec![
+                    "⢀⣀⡀       ",
+                    "⢸⣿⡇       ",
+                    "⠈⠉⠁       ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                ],
+            },
+            RectTest {
+                start: (5, 9),
+                stop: (2, 4),
+                fill: true,
+                expected: vec![
+                    "⢀⣀⡀       ",
+                    "⢸⣿⡇       ",
+                    "⠈⠉⠁       ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                    "          ",
+                ],
+            },
+            RectTest {
+                start: (0, 0),
+                stop: (20, 40),
+                fill: false,
+                expected: vec![
+                    "⡏⠉⠉⠉⠉⠉⠉⠉⠉⢹",
+                    "⡇        ⢸",
+                    "⡇        ⢸",
+                    "⡇        ⢸",
+                    "⡇        ⢸",
+                    "⡇        ⢸",
+                    "⡇        ⢸",
+                    "⡇        ⢸",
+                    "⡇        ⢸",
+                    "⣇⣀⣀⣀⣀⣀⣀⣀⣀⣸",
+                ],
+            },
+            RectTest {
+                start: (1, 1),
+                stop: (20, 40),
+                fill: false,
+                expected: vec![
+                    "⡏⠉⠉⠉⠉⠉⠉⠉⠉⢹",
+                    "⡇        ⢸",
+                    "⡇        ⢸",
+                    "⡇        ⢸",
+                    "⡇        ⢸",
+                    "⡇        ⢸",
+                    "⡇        ⢸",
+                    "⡇        ⢸",
+                    "⡇        ⢸",
+                    "⣇⣀⣀⣀⣀⣀⣀⣀⣀⣸",
+                ],
+            },
+            RectTest {
+                start: (1, 1),
+                stop: (20, 40),
+                fill: true,
+                expected: vec![
+                    "⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿",
+                    "⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿",
+                    "⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿",
+                    "⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿",
+                    "⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿",
+                    "⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿",
+                    "⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿",
+                    "⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿",
+                    "⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿",
+                    "⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿",
+                ],
+            },
+            RectTest {
+                start: (2, 2),
+                stop: (19, 39),
+                fill: false,
+                expected: vec![
+                    "⢰⠒⠒⠒⠒⠒⠒⠒⠒⡆",
+                    "⢸        ⡇",
+                    "⢸        ⡇",
+                    "⢸        ⡇",
+                    "⢸        ⡇",
+                    "⢸        ⡇",
+                    "⢸        ⡇",
+                    "⢸        ⡇",
+                    "⢸        ⡇",
+                    "⠸⠤⠤⠤⠤⠤⠤⠤⠤⠇",
+                ],
+            },
+            RectTest {
+                start: (2, 2),
+                stop: (19, 39),
+                fill: true,
+                expected: vec![
+                    "⢰⣶⣶⣶⣶⣶⣶⣶⣶⡆",
+                    "⢸⣿⣿⣿⣿⣿⣿⣿⣿⡇",
+                    "⢸⣿⣿⣿⣿⣿⣿⣿⣿⡇",
+                    "⢸⣿⣿⣿⣿⣿⣿⣿⣿⡇",
+                    "⢸⣿⣿⣿⣿⣿⣿⣿⣿⡇",
+                    "⢸⣿⣿⣿⣿⣿⣿⣿⣿⡇",
+                    "⢸⣿⣿⣿⣿⣿⣿⣿⣿⡇",
+                    "⢸⣿⣿⣿⣿⣿⣿⣿⣿⡇",
+                    "⢸⣿⣿⣿⣿⣿⣿⣿⣿⡇",
+                    "⠸⠿⠿⠿⠿⠿⠿⠿⠿⠇",
+                ],
+            },
+        ];
+        for test in tests {
+            rect_test(&test);
+        }
+    }
+}
