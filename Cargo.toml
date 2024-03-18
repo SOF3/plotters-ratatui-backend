@@ -22,7 +22,7 @@ widget = ["dep:plotters"]
 [dev-dependencies]
 anyhow = "1.0.75"
 crossterm = "0.27.0"
-flexi_logger = "0.27.2"
+flexi_logger = "0.28.0"
 itertools = "0.12.1"
 num-traits = "0.2.17"
 plotters = "0.3.5"
