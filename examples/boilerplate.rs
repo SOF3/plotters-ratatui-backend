@@ -35,7 +35,7 @@ pub fn main_boilerplate(
                 Direction::Horizontal,
                 std::iter::repeat(Constraint::Ratio(1, draw_fns.len() as u32)).take(draw_fns.len()),
             )
-            .split(frame.size());
+            .split(frame.area());
             for (&rect, &draw_fn) in iter::zip(&*rects, draw_fns) {
                 frame.render_widget(widget_fn(draw_fn), rect);
             }
