@@ -32,16 +32,10 @@ fn main() -> anyhow::Result<()> {
             .x_label_area_size(40)
             .y_label_area_size(40)
             .build_cartesian_2d(0f64..1f64, 0f64..1f64)?;
-        scatter_ctx
-            .configure_mesh()
-            .disable_x_mesh()
-            .disable_y_mesh()
-            .draw()?;
+        scatter_ctx.configure_mesh().disable_x_mesh().disable_y_mesh().draw()?;
         scatter_ctx.draw_series(
-            random_points
-            .iter()
-            .map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
-            )?;
+            random_points.iter().map(|(x, y)| Circle::new((*x, *y), 2, GREEN.filled())),
+        )?;
         let x_hist = Histogram::vertical(&x_hist_ctx)
             .style(GREEN.filled())
             .margin(0)
